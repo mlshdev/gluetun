@@ -8,3 +8,6 @@ LICENSE
 README.md
 title.svg
 devrun
+third_party/mullvad-wireguard-go/libmaybenot.a
+third_party/mullvad-wireguard-go/maybenot-ffi/target
+wiki

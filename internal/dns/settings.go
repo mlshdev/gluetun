@@ -17,6 +17,7 @@ import (
 	"github.com/qdm12/dns/v2/pkg/provider"
 	"github.com/qdm12/dns/v2/pkg/server"
 	"github.com/qdm12/gluetun/internal/configuration/settings"
+	"github.com/qdm12/gluetun/internal/dnsproviders"
 )
 
 func (l *Loop) GetSettings() (settings settings.DNS) { return l.state.GetSettings() }
@@ -125,7 +126,7 @@ func buildProviders(userSettings settings.DNS, localSubnets []netip.Prefix,
 		len(userSettings.UpstreamPlainAddresses) > 0
 	if !userDefinedPlainAddresses {
 		providers = make([]provider.Provider, len(userSettings.Providers))
-		providersData := provider.NewProviders()
+		providersData := dnsproviders.New()
 		for i, providerName := range userSettings.Providers {
 			var err error
 			providers[i], err = providersData.Get(providerName)

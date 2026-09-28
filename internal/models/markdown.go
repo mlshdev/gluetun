@@ -24,6 +24,7 @@ const (
 	categoriesHeader  = "Categories"
 	cityHeader        = "City"
 	countryHeader     = "Country"
+	daitaHeader       = "DAITA"
 	freeHeader        = "Free"
 	hostnameHeader    = "Hostname"
 	ispHeader         = "ISP"
@@ -56,6 +57,8 @@ func (s *Server) ToMarkdown(headers ...string) (markdown string) {
 			fields[i] = s.Country
 		case categoriesHeader:
 			fields[i] = strings.Join(s.Categories, ", ")
+		case daitaHeader:
+			fields[i] = boolToMarkdown(s.Daita)
 		case freeHeader:
 			fields[i] = boolToMarkdown(s.Free)
 		case hostnameHeader:
@@ -130,7 +133,7 @@ func getMarkdownHeaders(vpnProvider string) (headers []string, err error) {
 	case providers.Ivpn:
 		return []string{countryHeader, cityHeader, ispHeader, hostnameHeader, vpnHeader, tcpHeader, udpHeader}, nil
 	case providers.Mullvad:
-		return []string{countryHeader, cityHeader, ispHeader, ownedHeader, hostnameHeader, vpnHeader}, nil
+		return []string{countryHeader, cityHeader, ispHeader, ownedHeader, daitaHeader, hostnameHeader, vpnHeader}, nil
 	case providers.Nordvpn:
 		return []string{countryHeader, regionHeader, cityHeader, hostnameHeader, vpnHeader, categoriesHeader}, nil
 	case providers.Privado:

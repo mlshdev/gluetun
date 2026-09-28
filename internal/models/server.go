@@ -34,6 +34,7 @@ type Server struct {
 	SecureCore  bool         `json:"secure_core,omitempty"`
 	Tor         bool         `json:"tor,omitempty"`
 	PortForward bool         `json:"port_forward,omitempty"`
+	Daita       bool         `json:"daita,omitempty"`
 	Keep        bool         `json:"keep,omitempty"`
 	IPs         []netip.Addr `json:"ips,omitempty"`
 }

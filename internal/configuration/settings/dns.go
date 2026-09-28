@@ -8,6 +8,7 @@ import (
 
 	"github.com/qdm12/dns/v2/pkg/provider"
 	"github.com/qdm12/gluetun/internal/configuration/settings/helpers"
+	"github.com/qdm12/gluetun/internal/dnsproviders"
 	"github.com/qdm12/gosettings"
 	"github.com/qdm12/gosettings/reader"
 	"github.com/qdm12/gotree"
@@ -103,6 +104,11 @@ func (d DNS) validate() (err error) {
 	}
 	// Note: all DNS built in providers have both IPv4 and IPv6 addresses for all modes
 
+	err = validateProviders(d.Providers)
+	if err != nil {
+		return fmt.Errorf("DNS upstream resolver: %w", err)
+	}
+
 	err = d.Blacklist.validate()
 	if err != nil {
 		return err
@@ -117,6 +123,17 @@ func (d DNS) validate() (err error) {
 		}
 	}
 
+	return nil
+}
+
+func validateProviders(providerNames []string) (err error) {
+	providers := dnsproviders.New()
+	for _, providerName := range providerNames {
+		_, err = providers.Get(providerName)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/qdm12/gluetun-servers/pkg/servers"
 	"github.com/qdm12/gluetun/internal/constants/providers"
+	"github.com/qdm12/gluetun/internal/constants/vpn"
 	"github.com/qdm12/gluetun/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,4 +61,43 @@ func Test_parseHardcodedServers_filepathsAndEmbeddedProviderFiles(t *testing.T) 
 		assert.NotZerof(t, fileServers.Timestamp, "for provider %s", provider)
 		assert.NotEmptyf(t, fileServers.Servers, "for provider %s", provider)
 	}
+}
+
+func Test_parseHardcodedServers_mullvadDaita(t *testing.T) {
+	t.Parallel()
+
+	hardcodedServers := parseHardcodedServers(t.TempDir())
+
+	mullvadServers := hardcodedServers.ProviderToServers[providers.Mullvad]
+	daitaCount := 0
+	for _, server := range mullvadServers.Servers {
+		if server.Daita {
+			daitaCount++
+			assert.Equal(t, vpn.Wireguard, server.VPN)
+		}
+	}
+	assert.NotZero(t, daitaCount)
+}
+
+func Test_addMullvadDaita(t *testing.T) {
+	t.Parallel()
+
+	servers := models.Servers{
+		Version: 3,
+		Servers: []models.Server{
+			{Hostname: "al-tia-wg-001"},
+			{Hostname: "not-a-daita-server"},
+		},
+	}
+
+	addMullvadDaita(&servers)
+
+	expected := models.Servers{
+		Version: 4,
+		Servers: []models.Server{
+			{Hostname: "al-tia-wg-001", Daita: true},
+			{Hostname: "not-a-daita-server"},
+		},
+	}
+	assert.Equal(t, expected, servers)
 }

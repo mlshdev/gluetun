@@ -78,6 +78,10 @@ func filterServer(server models.Server,
 		return true
 	}
 
+	if *selection.MullvadDaita && !server.Daita {
+		return true
+	}
+
 	if *selection.PortForwardOnly && !server.PortForward {
 		return true
 	}

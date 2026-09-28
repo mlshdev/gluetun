@@ -1,17 +1,16 @@
 ARG ALPINE_VERSION=3.23
 ARG GO_ALPINE_VERSION=3.23
 ARG GO_VERSION=1.26
-ARG XCPUTRANSLATE_VERSION=v0.9.0
+ARG RUST_VERSION=1.98
+ARG RUST_ALPINE_VERSION=3.23
 ARG GOLANGCI_LINT_VERSION=v2.11.4
 ARG MOCKGEN_VERSION=v0.6.0
 ARG BUILDPLATFORM=linux/amd64
 
-FROM --platform=${BUILDPLATFORM} ghcr.io/qdm12/xcputranslate:${XCPUTRANSLATE_VERSION} AS xcputranslate
 FROM --platform=${BUILDPLATFORM} ghcr.io/qdm12/binpot:golangci-lint-${GOLANGCI_LINT_VERSION} AS golangci-lint
 FROM --platform=${BUILDPLATFORM} ghcr.io/qdm12/binpot:mockgen-${MOCKGEN_VERSION} AS mockgen
 
 FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION}-alpine${GO_ALPINE_VERSION} AS base
-COPY --from=xcputranslate /xcputranslate /usr/local/bin/xcputranslate
 # Note: findutils needed to have xargs support `-d` flag for mocks stage.
 RUN apk --update add git g++ findutils iptables
 ENV CGO_ENABLED=0
@@ -19,9 +18,20 @@ COPY --from=golangci-lint /bin /go/bin/golangci-lint
 COPY --from=mockgen /bin /go/bin/mockgen
 WORKDIR /tmp/gobuild
 COPY go.mod go.sum ./
+COPY third_party/mullvad-wireguard-go/go.mod third_party/mullvad-wireguard-go/go.sum ./third_party/mullvad-wireguard-go/
 RUN go mod download
+COPY third_party/ ./third_party/
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
+
+# The maybenot DAITA library is built for the target platform since it is
+# statically linked with cgo, which requires native build runners.
+FROM rust:${RUST_VERSION}-alpine${RUST_ALPINE_VERSION} AS maybenot
+WORKDIR /tmp/maybenot-ffi
+COPY third_party/mullvad-wireguard-go/maybenot-ffi/ ./
+RUN RUSTFLAGS="-C metadata=maybenot-ffi" cargo rustc --crate-type=staticlib --release --locked && \
+    mv target/release/libmaybenot_ffi.a /libmaybenot.a && \
+    rm -rf target
 
 FROM --platform=${BUILDPLATFORM} base AS test
 # Note on the go race detector:
@@ -50,14 +60,28 @@ FROM --platform=${BUILDPLATFORM} base AS xcompile
 RUN GOOS=darwin go build -o /dev/null ./...
 RUN GOOS=windows go build -o /dev/null ./...
 
-FROM --platform=${BUILDPLATFORM} base AS build
-ARG TARGETPLATFORM
+FROM --platform=${BUILDPLATFORM} base AS lint-daita
+COPY .golangci.yml ./
+ENV CGO_ENABLED=1
+RUN golangci-lint run --build-tags daita ./internal/daita/... ./internal/vpn/...
+
+# The build stage runs on the target platform to link the maybenot
+# static library with cgo, so it requires native build runners.
+FROM golang:${GO_VERSION}-alpine${GO_ALPINE_VERSION} AS build
+RUN apk --update add gcc musl-dev
+WORKDIR /tmp/gobuild
+COPY go.mod go.sum ./
+COPY third_party/mullvad-wireguard-go/go.mod third_party/mullvad-wireguard-go/go.sum ./third_party/mullvad-wireguard-go/
+RUN go mod download
+COPY third_party/ ./third_party/
+COPY --from=maybenot /libmaybenot.a ./third_party/mullvad-wireguard-go/libmaybenot.a
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 ARG VERSION=unknown
 ARG CREATED="an unknown date"
 ARG COMMIT=unknown
-RUN GOARCH="$(xcputranslate translate -field arch -targetplatform ${TARGETPLATFORM})" \
-    GOARM="$(xcputranslate translate -field arm -targetplatform ${TARGETPLATFORM})" \
-    go build -trimpath -ldflags="-s -w \
+RUN CGO_ENABLED=1 go build -tags daita -trimpath -ldflags="-s -w \
+    -linkmode external -extldflags '-static' \
     -X 'main.version=$VERSION' \
     -X 'main.created=$CREATED' \
     -X 'main.commit=$COMMIT' \
@@ -171,6 +195,9 @@ ENV VPN_SERVICE_PROVIDER=pia \
     # # Mullvad only:
     ISP= \
     OWNED_ONLY=no \
+    MULLVAD_DAITA_ENABLE=off \
+    MULLVAD_DAITA_DIRECT=off \
+    MULLVAD_POST_QUANTUM_ENABLE=off \
     # # Private Internet Access only:
     PRIVATE_INTERNET_ACCESS_OPENVPN_ENCRYPTION_PRESET= \
     VPN_PORT_FORWARDING_USERNAME= \

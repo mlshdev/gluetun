@@ -18,6 +18,7 @@ type serverData struct {
 	IPv6     string `json:"ipv6_addr_in"`
 	Type     string `json:"type"`
 	PubKey   string `json:"pubkey"` // Wireguard public key
+	Daita    bool   `json:"daita"`
 }
 
 func fetchAPI(ctx context.Context, client *http.Client) (data []serverData, err error) {

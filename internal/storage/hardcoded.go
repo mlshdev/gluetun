@@ -35,6 +35,10 @@ func parseHardcodedServers(serversPath string) (allServers models.AllServers) {
 				filename, provider))
 		}
 
+		if provider == providers.Mullvad {
+			addMullvadDaita(&providerServers)
+		}
+
 		providerServers.Filepath = filepath.Join(serversPath, filename)
 		allServers.ProviderToServers[provider] = providerServers
 	}

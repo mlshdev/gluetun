@@ -31,6 +31,10 @@ type PortForward interface {
 	UpdateWith(settings portforward.Settings) (err error)
 }
 
+type wireguardRunner interface {
+	Run(ctx context.Context, waitError chan<- error, ready chan<- struct{})
+}
+
 type OpenVPN interface {
 	WriteConfig(lines []string) error
 	WriteAuthFile(user, password string) error

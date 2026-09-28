@@ -12,15 +12,19 @@ import (
 type Provider struct {
 	storage    common.Storage
 	connPicker *utils.ConnectionPicker
+	// entryConnPicker is used to pick DAITA entry servers
+	// for multihop, separately from connPicker.
+	entryConnPicker *utils.ConnectionPicker
 	common.Fetcher
 }
 
 func New(storage common.Storage, client *http.Client,
 ) *Provider {
 	return &Provider{
-		storage:    storage,
-		connPicker: utils.NewConnectionPicker(),
-		Fetcher:    updater.New(client),
+		storage:         storage,
+		connPicker:      utils.NewConnectionPicker(),
+		entryConnPicker: utils.NewConnectionPicker(),
+		Fetcher:         updater.New(client),
 	}
 }
 

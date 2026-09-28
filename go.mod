@@ -46,7 +46,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.6.1 // indirect
+	github.com/cloudflare/circl v1.6.1
 	github.com/cronokirby/saferith v0.33.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -56,6 +56,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/common v0.60.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/qdm12/gluetun/third_party/mullvad-wireguard-go v0.0.0-00010101000000-000000000000
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
@@ -67,3 +68,7 @@ require (
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.70 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.70 // indirect
 )
+
+replace github.com/qdm12/gluetun/third_party/mullvad-wireguard-go => ./third_party/mullvad-wireguard-go
+
+replace github.com/cloudflare/circl => github.com/mullvad/circl v0.0.0-20260708154414-63782cca6fff

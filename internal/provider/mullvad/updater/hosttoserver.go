@@ -62,6 +62,7 @@ func (hts hostToServer) add(data serverData) (err error) {
 	server.ISP = data.Provider
 	server.Owned = data.Owned
 	server.WgPubKey = data.PubKey
+	server.Daita = data.Daita
 
 	hts[data.Hostname] = server
 

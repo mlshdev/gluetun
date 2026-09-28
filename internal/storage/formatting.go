@@ -14,6 +14,17 @@ func commaJoin(slice []string) string {
 	return strings.Join(slice, ", ")
 }
 
+func appendValues(messageParts []string, singular, plural string, values []string) []string {
+	switch len(values) {
+	case 0:
+		return messageParts
+	case 1:
+		return append(messageParts, singular+" "+values[0])
+	default:
+		return append(messageParts, plural+" "+commaJoin(values))
+	}
+}
+
 func noServerFoundError(selection settings.ServerSelection) (err error) {
 	var messageParts []string
 
@@ -25,79 +36,22 @@ func noServerFoundError(selection settings.ServerSelection) (err error) {
 	}
 	messageParts = append(messageParts, "protocol "+protocol)
 
-	switch len(selection.Countries) {
-	case 0:
-	case 1:
-		part := "country " + selection.Countries[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "countries " + commaJoin(selection.Countries)
-		messageParts = append(messageParts, part)
-	}
-
-	switch len(selection.Categories) {
-	case 0:
-	case 1:
-		part := "category " + selection.Categories[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "categories " + commaJoin(selection.Categories)
-		messageParts = append(messageParts, part)
-	}
-
-	switch len(selection.Regions) {
-	case 0:
-	case 1:
-		part := "region " + selection.Regions[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "regions " + commaJoin(selection.Regions)
-		messageParts = append(messageParts, part)
-	}
-
-	switch len(selection.Cities) {
-	case 0:
-	case 1:
-		part := "city " + selection.Cities[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "cities " + commaJoin(selection.Cities)
-		messageParts = append(messageParts, part)
-	}
+	messageParts = appendValues(messageParts, "country", "countries", selection.Countries)
+	messageParts = appendValues(messageParts, "category", "categories", selection.Categories)
+	messageParts = appendValues(messageParts, "region", "regions", selection.Regions)
+	messageParts = appendValues(messageParts, "city", "cities", selection.Cities)
 
 	if *selection.OwnedOnly {
 		messageParts = append(messageParts, "owned servers only")
 	}
 
-	switch len(selection.ISPs) {
-	case 0:
-	case 1:
-		part := "ISP " + selection.ISPs[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "ISPs " + commaJoin(selection.ISPs)
-		messageParts = append(messageParts, part)
+	if *selection.MullvadDaita {
+		messageParts = append(messageParts, "DAITA servers only")
 	}
 
-	switch len(selection.Hostnames) {
-	case 0:
-	case 1:
-		part := "hostname " + selection.Hostnames[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "hostnames " + commaJoin(selection.Hostnames)
-		messageParts = append(messageParts, part)
-	}
-
-	switch len(selection.Names) {
-	case 0:
-	case 1:
-		part := "name " + selection.Names[0]
-		messageParts = append(messageParts, part)
-	default:
-		part := "names " + commaJoin(selection.Names)
-		messageParts = append(messageParts, part)
-	}
+	messageParts = appendValues(messageParts, "ISP", "ISPs", selection.ISPs)
+	messageParts = appendValues(messageParts, "hostname", "hostnames", selection.Hostnames)
+	messageParts = appendValues(messageParts, "name", "names", selection.Names)
 
 	switch len(selection.Numbers) {
 	case 0:

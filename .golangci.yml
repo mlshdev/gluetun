@@ -20,6 +20,13 @@ linters:
   settings:
     misspell:
       locale: US
+    gomoddirectives:
+      # The Mullvad wireguard-go fork with DAITA is vendored in third_party.
+      replace-local: true
+      # The Mullvad circl fork provides Classic McEliece round 3 used by
+      # the Mullvad post-quantum ephemeral peer negotiation.
+      replace-allow-list:
+        - github.com/cloudflare/circl
     goconst:
       ignore-string-values:
         # commonly used settings strings

@@ -23,13 +23,29 @@ type Connection struct {
 	ServerName string `json:"server_name,omitempty"`
 	// PortForward is used for PIA and ProtonVPN for port forwarding
 	PortForward bool `json:"port_forward"`
+	// Daita is true if Mullvad DAITA is to be negotiated
+	// with the (entry) VPN server, only used for Wireguard.
+	Daita bool `json:"daita,omitempty"`
+	// Exit is the exit VPN server connection when multihop
+	// is used, in which case the connection fields above are
+	// for the entry VPN server. It is only used for Mullvad
+	// DAITA with Wireguard.
+	Exit *Connection `json:"exit,omitempty"`
 }
 
 func (c *Connection) Equal(other Connection) bool {
 	return c.IP.Compare(other.IP) == 0 && c.Port == other.Port &&
 		c.Protocol == other.Protocol && c.Hostname == other.Hostname &&
 		c.PubKey == other.PubKey && c.ServerName == other.ServerName &&
-		c.PortForward == other.PortForward
+		c.PortForward == other.PortForward && c.Daita == other.Daita &&
+		exitsAreEqual(c.Exit, other.Exit)
+}
+
+func exitsAreEqual(a, b *Connection) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Equal(*b)
 }
 
 // UpdateEmptyWith updates each field of the connection where the

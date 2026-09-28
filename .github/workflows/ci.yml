@@ -11,6 +11,7 @@ on:
       - cmd/**
       - internal/**
       - pkg/**
+      - third_party/**
       - .dockerignore
       - .golangci.yml
       - Dockerfile
@@ -22,6 +23,7 @@ on:
       - cmd/**
       - internal/**
       - pkg/**
+      - third_party/**
       - .dockerignore
       - .golangci.yml
       - Dockerfile
@@ -53,6 +55,9 @@ jobs:
 
       - name: Linting
         run: docker build --target lint .
+
+      - name: Linting DAITA code
+        run: docker build --target lint-daita .
 
       - name: Mocks check
         run: docker build --target mocks .

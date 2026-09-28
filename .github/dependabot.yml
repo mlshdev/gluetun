@@ -39,3 +39,13 @@ updates:
           - "github.com/stretchr/testify"
           - "github.com/ulikunitz/xz"
           - "gopkg.in/ini.v1"
+  - # Mullvad wireguard-go fork used for DAITA
+    package-ecosystem: "gomod"
+    directory: "/third_party/mullvad-wireguard-go"
+    schedule: {interval: "cron", cronjob: "0 0 * * 1,4", timezone: "UTC"}
+    groups: {mullvad-wireguard-go: {patterns: ["*"]}}
+  - # maybenot DAITA library, check maybenot.h matches on version bumps
+    package-ecosystem: "cargo"
+    directory: "/third_party/mullvad-wireguard-go/maybenot-ffi"
+    schedule: {interval: "cron", cronjob: "0 0 * * 1,4", timezone: "UTC"}
+    groups: {maybenot: {patterns: ["*"]}}

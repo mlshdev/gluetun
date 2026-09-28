@@ -47,6 +47,21 @@ type ServerSelection struct {
 	// OwnedOnly is true if VPN provider servers that are not owned
 	// should be filtered. This is used with Mullvad.
 	OwnedOnly *bool `json:"owned_only"`
+	// MullvadDaita is true if Mullvad DAITA (Defense against AI-guided
+	// Traffic Analysis) should be used. This is used with Mullvad and
+	// Wireguard only.
+	MullvadDaita *bool `json:"mullvad_daita"`
+	// MullvadDaitaDirect is true if only Mullvad servers supporting DAITA
+	// should be used. If it is false and no server supporting DAITA matches
+	// the other filters, a DAITA server is used as an entry server to
+	// multihop to a matching exit server not supporting DAITA.
+	// It is only used if MullvadDaita is true.
+	MullvadDaitaDirect *bool `json:"mullvad_daita_direct"`
+	// MullvadPostQuantum is true if the Mullvad Wireguard tunnel should be
+	// upgraded to a quantum-resistant tunnel, using a pre-shared key derived
+	// from post-quantum key encapsulation mechanisms.
+	// This is used with Mullvad and Wireguard only.
+	MullvadPostQuantum *bool `json:"mullvad_post_quantum"`
 	// FreeOnly is true if VPN servers that are not free should
 	// be filtered. This is used with ProtonVPN and VPN Unlimited.
 	FreeOnly *bool `json:"free_only"`
@@ -270,6 +285,14 @@ func validateFeatureFilters(settings ServerSelection, vpnServiceProvider string)
 	switch {
 	case *settings.OwnedOnly && vpnServiceProvider != providers.Mullvad:
 		return errors.New("owned only filter is not supported")
+	case *settings.MullvadDaita && vpnServiceProvider != providers.Mullvad:
+		return errors.New("DAITA is not supported")
+	case *settings.MullvadDaita && settings.VPN != vpn.Wireguard:
+		return fmt.Errorf("DAITA is not supported for VPN type %s", settings.VPN)
+	case *settings.MullvadPostQuantum && vpnServiceProvider != providers.Mullvad:
+		return errors.New("post-quantum is not supported")
+	case *settings.MullvadPostQuantum && settings.VPN != vpn.Wireguard:
+		return fmt.Errorf("post-quantum is not supported for VPN type %s", settings.VPN)
 	case vpnServiceProvider == providers.Protonvpn && *settings.FreeOnly && *settings.PortForwardOnly:
 		return errors.New("port forwarding only filter is not supported: together with free only filter")
 	case *settings.StreamOnly &&
@@ -291,26 +314,29 @@ func validateFeatureFilters(settings ServerSelection, vpnServiceProvider string)
 
 func (ss *ServerSelection) copy() (copied ServerSelection) {
 	return ServerSelection{
-		VPN:             ss.VPN,
-		Mode:            ss.Mode,
-		Countries:       gosettings.CopySlice(ss.Countries),
-		Categories:      gosettings.CopySlice(ss.Categories),
-		Regions:         gosettings.CopySlice(ss.Regions),
-		Cities:          gosettings.CopySlice(ss.Cities),
-		ISPs:            gosettings.CopySlice(ss.ISPs),
-		Hostnames:       gosettings.CopySlice(ss.Hostnames),
-		Names:           gosettings.CopySlice(ss.Names),
-		Numbers:         gosettings.CopySlice(ss.Numbers),
-		OwnedOnly:       gosettings.CopyPointer(ss.OwnedOnly),
-		FreeOnly:        gosettings.CopyPointer(ss.FreeOnly),
-		PremiumOnly:     gosettings.CopyPointer(ss.PremiumOnly),
-		StreamOnly:      gosettings.CopyPointer(ss.StreamOnly),
-		SecureCoreOnly:  gosettings.CopyPointer(ss.SecureCoreOnly),
-		TorOnly:         gosettings.CopyPointer(ss.TorOnly),
-		PortForwardOnly: gosettings.CopyPointer(ss.PortForwardOnly),
-		MultiHopOnly:    gosettings.CopyPointer(ss.MultiHopOnly),
-		OpenVPN:         ss.OpenVPN.copy(),
-		Wireguard:       ss.Wireguard.copy(),
+		VPN:                ss.VPN,
+		Mode:               ss.Mode,
+		Countries:          gosettings.CopySlice(ss.Countries),
+		Categories:         gosettings.CopySlice(ss.Categories),
+		Regions:            gosettings.CopySlice(ss.Regions),
+		Cities:             gosettings.CopySlice(ss.Cities),
+		ISPs:               gosettings.CopySlice(ss.ISPs),
+		Hostnames:          gosettings.CopySlice(ss.Hostnames),
+		Names:              gosettings.CopySlice(ss.Names),
+		Numbers:            gosettings.CopySlice(ss.Numbers),
+		OwnedOnly:          gosettings.CopyPointer(ss.OwnedOnly),
+		MullvadDaita:       gosettings.CopyPointer(ss.MullvadDaita),
+		MullvadDaitaDirect: gosettings.CopyPointer(ss.MullvadDaitaDirect),
+		MullvadPostQuantum: gosettings.CopyPointer(ss.MullvadPostQuantum),
+		FreeOnly:           gosettings.CopyPointer(ss.FreeOnly),
+		PremiumOnly:        gosettings.CopyPointer(ss.PremiumOnly),
+		StreamOnly:         gosettings.CopyPointer(ss.StreamOnly),
+		SecureCoreOnly:     gosettings.CopyPointer(ss.SecureCoreOnly),
+		TorOnly:            gosettings.CopyPointer(ss.TorOnly),
+		PortForwardOnly:    gosettings.CopyPointer(ss.PortForwardOnly),
+		MultiHopOnly:       gosettings.CopyPointer(ss.MultiHopOnly),
+		OpenVPN:            ss.OpenVPN.copy(),
+		Wireguard:          ss.Wireguard.copy(),
 	}
 }
 
@@ -326,6 +352,9 @@ func (ss *ServerSelection) overrideWith(other ServerSelection) {
 	ss.Names = gosettings.OverrideWithSlice(ss.Names, other.Names)
 	ss.Numbers = gosettings.OverrideWithSlice(ss.Numbers, other.Numbers)
 	ss.OwnedOnly = gosettings.OverrideWithPointer(ss.OwnedOnly, other.OwnedOnly)
+	ss.MullvadDaita = gosettings.OverrideWithPointer(ss.MullvadDaita, other.MullvadDaita)
+	ss.MullvadDaitaDirect = gosettings.OverrideWithPointer(ss.MullvadDaitaDirect, other.MullvadDaitaDirect)
+	ss.MullvadPostQuantum = gosettings.OverrideWithPointer(ss.MullvadPostQuantum, other.MullvadPostQuantum)
 	ss.FreeOnly = gosettings.OverrideWithPointer(ss.FreeOnly, other.FreeOnly)
 	ss.PremiumOnly = gosettings.OverrideWithPointer(ss.PremiumOnly, other.PremiumOnly)
 	ss.StreamOnly = gosettings.OverrideWithPointer(ss.StreamOnly, other.StreamOnly)
@@ -341,6 +370,9 @@ func (ss *ServerSelection) setDefaults(vpnProvider string, portForwardingEnabled
 	ss.VPN = gosettings.DefaultComparable(ss.VPN, vpn.OpenVPN)
 	ss.Mode = gosettings.DefaultComparable(ss.Mode, "random")
 	ss.OwnedOnly = gosettings.DefaultPointer(ss.OwnedOnly, false)
+	ss.MullvadDaita = gosettings.DefaultPointer(ss.MullvadDaita, false)
+	ss.MullvadDaitaDirect = gosettings.DefaultPointer(ss.MullvadDaitaDirect, false)
+	ss.MullvadPostQuantum = gosettings.DefaultPointer(ss.MullvadPostQuantum, false)
 	ss.FreeOnly = gosettings.DefaultPointer(ss.FreeOnly, false)
 	ss.PremiumOnly = gosettings.DefaultPointer(ss.PremiumOnly, false)
 	ss.StreamOnly = gosettings.DefaultPointer(ss.StreamOnly, false)
@@ -400,6 +432,15 @@ func (ss ServerSelection) toLinesNode() (node *gotree.Node) {
 
 	if *ss.OwnedOnly {
 		node.Appendf("Owned only servers: yes")
+	}
+
+	if *ss.MullvadDaita {
+		daitaNode := node.Appendf("Mullvad DAITA: yes")
+		daitaNode.Appendf("Direct only: %s", gosettings.BoolToYesNo(ss.MullvadDaitaDirect))
+	}
+
+	if *ss.MullvadPostQuantum {
+		node.Appendf("Mullvad post-quantum: yes")
 	}
 
 	if *ss.FreeOnly {
@@ -472,6 +513,24 @@ func (ss *ServerSelection) read(r *reader.Reader,
 
 	// Mullvad only
 	ss.OwnedOnly, err = r.BoolPtr("OWNED_ONLY", reader.RetroKeys("OWNED"))
+	if err != nil {
+		return err
+	}
+
+	// Mullvad only
+	ss.MullvadDaita, err = r.BoolPtr("MULLVAD_DAITA_ENABLE")
+	if err != nil {
+		return err
+	}
+
+	// Mullvad only
+	ss.MullvadDaitaDirect, err = r.BoolPtr("MULLVAD_DAITA_DIRECT")
+	if err != nil {
+		return err
+	}
+
+	// Mullvad only
+	ss.MullvadPostQuantum, err = r.BoolPtr("MULLVAD_POST_QUANTUM_ENABLE")
 	if err != nil {
 		return err
 	}

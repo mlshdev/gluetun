@@ -68,6 +68,7 @@ Lightweight swiss-army-knife-like VPN client to multiple VPN service providers
   - For custom Wireguard configurations using [the custom provider](https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/custom.md)
   - More in progress, see [#134](https://github.com/passteque/gluetun/issues/134)
 - Supports AmneziaWG only with the custom provider for now
+- Supports Mullvad [DAITA](https://mullvad.net/en/blog/daita-defense-against-ai-guided-traffic-analysis) with Wireguard, see [Mullvad DAITA](#mullvad-daita)
 - DNS over TLS baked in with service provider(s) of your choice
 - DNS fine blocking of malicious/ads hostnames and IP addresses, with live update every 24 hours
 - Choose the vpn network protocol, `udp` or `tcp`
@@ -87,6 +88,9 @@ Lightweight swiss-army-knife-like VPN client to multiple VPN service providers
 🎉 There are now instructions specific to each VPN provider with examples to help you get started as quickly as possible!
 
 Go to the [Wiki](https://github.com/qdm12/gluetun-wiki)!
+
+This fork ships a copy of the Wiki in the [`wiki`](wiki/README.md) directory, which also documents the fork features:
+[Mullvad DAITA](wiki/setup/advanced/mullvad-daita.md), [Mullvad post-quantum](wiki/setup/advanced/mullvad-post-quantum.md) and [Mullvad DNS](wiki/setup/options/dns.md#mullvad-dns).
 
 [🐛 Found a bug in the Wiki?!](https://github.com/qdm12/gluetun-wiki/issues/new/choose)
 
@@ -128,6 +132,38 @@ services:
 ```
 
 🆕 Image also available as `ghcr.io/qdm12/gluetun`
+
+### Mullvad DAITA
+
+[DAITA](https://mullvad.net/en/blog/daita-defense-against-ai-guided-traffic-analysis) (Defense Against AI-guided Traffic Analysis) pads and injects cover traffic to hide traffic patterns.
+It is only available in the `linux/amd64` and `linux/arm64` images, and only with `VPN_SERVICE_PROVIDER=mullvad` and `VPN_TYPE=wireguard`.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MULLVAD_DAITA_ENABLE` | `off` | Enable DAITA. Only Mullvad relays supporting DAITA are used as the relay you connect to. |
+| `MULLVAD_DAITA_DIRECT` | `off` | `on` connects directly to a DAITA relay matching your filters, and fails if there is none. `off` falls back to multihop when no DAITA relay matches your filters: a DAITA entry relay, preferably in the same country, tunnels to the non-DAITA exit relay matching your filters. |
+
+Notes:
+
+- DAITA requires the Mullvad userspace Wireguard implementation, so `WIREGUARD_IMPLEMENTATION` is ignored and a warning is logged if it is set to `kernelspace`.
+- Connecting takes a few more seconds, since an ephemeral peer is negotiated with the relay through the tunnel.
+- `wg show` does not work with DAITA since the userspace device does not expose a UAPI socket.
+
+### Mullvad post-quantum
+
+Like the official Mullvad app, the Wireguard tunnel can be upgraded to a quantum-resistant tunnel, see [wgephemeralpeer](https://github.com/mullvad/wgephemeralpeer).
+It is only available with `VPN_SERVICE_PROVIDER=mullvad` and `VPN_TYPE=wireguard`, works with both Wireguard implementations, and can be combined with DAITA and DAITA multihop.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MULLVAD_POST_QUANTUM_ENABLE` | `off` | Negotiate a Wireguard pre-shared key with the relay using the Classic McEliece and ML-KEM post-quantum key encapsulation mechanisms, through the tunnel. |
+
+Notes:
+
+- Connecting takes a few more seconds for the negotiation, and the connection fails if it does not succeed, instead of using a tunnel which is not quantum-resistant.
+- `WIREGUARD_PRESHARED_KEY` is ignored, since it is replaced by the negotiated pre-shared key.
+
+Mullvad DNS can be used as upstream resolver with `DNS_UPSTREAM_RESOLVERS=mullvad`, for both `DNS_UPSTREAM_RESOLVER_TYPE=DoT` and `DoH`.
 
 ## Fun graphs
 

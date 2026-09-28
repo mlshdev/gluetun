@@ -1,0 +1,37 @@
+name: Mullvad DAITA servers
+on:
+  schedule:
+    - cron: "0 0 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    if: github.repository != 'passteque/gluetun'
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch Mullvad DAITA Wireguard hostnames
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 https://api.mullvad.net/www/relays/all/ |
+            jq '[.[] | select(.type == "wireguard" and .daita == true) | .hostname] | sort' \
+            > internal/storage/mullvad_daita.json.new
+          if [ "$(jq length internal/storage/mullvad_daita.json.new)" -eq 0 ]; then
+            echo "no DAITA hostname found, refusing to update" >&2
+            exit 1
+          fi
+          mv internal/storage/mullvad_daita.json.new internal/storage/mullvad_daita.json
+
+      - uses: peter-evans/create-pull-request@v8
+        with:
+          branch: chore/mullvad-daita-servers
+          commit-message: "chore(mullvad): update DAITA servers"
+          title: "chore(mullvad): update DAITA servers"
+          body: Automated update of `internal/storage/mullvad_daita.json` from the Mullvad relays API.
+          labels: dependencies
+          delete-branch: true
